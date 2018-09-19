@@ -2,6 +2,7 @@ module github.com/perlin-network/noise
 
 require (
 	github.com/davecgh/go-spew v1.1.0 // indirect
+	github.com/davecgh/go-xdr v0.0.0-20161123171359-e6a2ba005892
 	github.com/fd/go-nat v1.0.0
 	github.com/gogo/protobuf v1.1.1
 	github.com/golang/mock v1.1.1
