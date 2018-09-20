@@ -5,7 +5,6 @@ import (
 	"github.com/perlin-network/noise/internal/protobuf"
 	"github.com/perlin-network/noise/log"
 	"github.com/perlin-network/noise/network"
-	"github.com/perlin-network/noise/peer"
 )
 
 type Plugin struct {
@@ -69,8 +68,8 @@ func (state *Plugin) Receive(ctx *network.PluginContext) error {
 		response := &protobuf.LookupNodeResponse{}
 
 		// Respond back with closest peers to a provided target.
-		for _, peerID := range state.Routes.FindClosestPeers(peer.ID(*msg.Target), dht.BucketSize) {
-			id := protobuf.ID(peerID)
+		for _, peerID := range state.Routes.FindClosestPeers(*network.ProtoPeerToPeer(msg.Target), dht.BucketSize) {
+			id := *network.PeerToProtoPeer(&peerID)
 			response.Peers = append(response.Peers, &id)
 		}
 

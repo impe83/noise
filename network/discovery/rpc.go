@@ -19,9 +19,9 @@ func queryPeerByID(net *network.Network, peerID peer.ID, targetID peer.ID, respo
 		return
 	}
 
-	targetProtoID := protobuf.ID(targetID)
+	targetProtoID := network.PeerToProtoPeer(&targetID)
 
-	msg := &protobuf.LookupNodeRequest{Target: &targetProtoID}
+	msg := &protobuf.LookupNodeRequest{Target: targetProtoID}
 	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
 	defer cancel()
 	response, err := client.Request(ctx, msg)
@@ -67,12 +67,12 @@ func (lookup *lookupBucket) performLookup(net *network.Network, targetID peer.ID
 
 		// Expand responses containing a peer's belief on the closest peers to target ID.
 		for _, id := range response {
-			peerID := peer.ID(*id)
+			peerID := network.ProtoPeerToPeer(id)
 
 			if _, seen := visited.LoadOrStore(peerID.PublicKeyHex(), struct{}{}); !seen {
 				// Append new peer to be queued by the routing table.
-				results = append(results, peerID)
-				lookup.queue = append(lookup.queue, peerID)
+				results = append(results, *peerID)
+				lookup.queue = append(lookup.queue, *peerID)
 			}
 		}
 
