@@ -5,13 +5,14 @@ import (
 	"net"
 
 	"github.com/perlin-network/noise/internal/protobuf"
+	"github.com/perlin-network/noise/peer"
 )
 
 // SerializeMessage compactly packs all bytes of a message together for cryptographic signing purposes.
-func SerializeMessage(id *protobuf.ID, message []byte) []byte {
+func SerializeMessage(id *peer.ID, message []byte) []byte {
 	const uint32Size = 4
 
-	serialized := make([]byte, uint32Size+len(id.Address)+uint32Size+len(id.Id)+len(message))
+	serialized := make([]byte, uint32Size+len(id.Address)+uint32Size+len(id.ID)+len(message))
 	pos := 0
 
 	binary.LittleEndian.PutUint32(serialized[pos:], uint32(len(id.Address)))
@@ -20,11 +21,11 @@ func SerializeMessage(id *protobuf.ID, message []byte) []byte {
 	copy(serialized[pos:], []byte(id.Address))
 	pos += len(id.Address)
 
-	binary.LittleEndian.PutUint32(serialized[pos:], uint32(len(id.Id)))
+	binary.LittleEndian.PutUint32(serialized[pos:], uint32(len(id.ID)))
 	pos += uint32Size
 
-	copy(serialized[pos:], id.Id)
-	pos += len(id.Id)
+	copy(serialized[pos:], id.ID)
+	pos += len(id.ID)
 
 	copy(serialized[pos:], message)
 	pos += len(message)
@@ -63,4 +64,28 @@ func GetRandomUnusedPort() int {
 	listener, _ := net.Listen("tcp", ":0")
 	defer listener.Close()
 	return listener.Addr().(*net.TCPAddr).Port
+}
+
+// ProtoPeerToPeer converts a protobuf.ID type to peer.ID
+func ProtoPeerToPeer(p *protobuf.ID) *peer.ID {
+	if p == nil {
+		return nil
+	}
+	return &peer.ID{
+		Address:   p.Address,
+		ID:        p.Id,
+		PublicKey: p.PublicKey,
+	}
+}
+
+// PeerToProtoPeer converts a peer.ID to protobuf.ID
+func PeerToProtoPeer(p *peer.ID) *protobuf.ID {
+	if p == nil {
+		return nil
+	}
+	return &protobuf.ID{
+		Address:   p.Address,
+		Id:        p.ID,
+		PublicKey: p.PublicKey,
+	}
 }

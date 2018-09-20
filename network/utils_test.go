@@ -6,7 +6,6 @@ import (
 	"reflect"
 	"testing"
 
-	"github.com/perlin-network/noise/internal/protobuf"
 	"github.com/perlin-network/noise/peer"
 )
 
@@ -22,11 +21,11 @@ func TestSerializeMessageInfoForSigning(t *testing.T) {
 
 	pk1, pk2 := mustReadRand(32), mustReadRand(32)
 
-	ids := []protobuf.ID{
-		protobuf.ID(peer.CreateID("tcp://127.0.0.1:3001", pk1)),
-		protobuf.ID(peer.CreateID("tcp://127.0.0.1:3001", pk2)),
-		protobuf.ID(peer.CreateID("tcp://127.0.0.1:3002", pk1)),
-		protobuf.ID(peer.CreateID("tcp://127.0.0.1:3002", pk2)),
+	ids := []peer.ID{
+		peer.CreateID("tcp://127.0.0.1:3001", pk1),
+		peer.CreateID("tcp://127.0.0.1:3001", pk2),
+		peer.CreateID("tcp://127.0.0.1:3002", pk1),
+		peer.CreateID("tcp://127.0.0.1:3002", pk2),
 	}
 
 	messages := [][]byte{

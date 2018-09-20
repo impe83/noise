@@ -13,9 +13,10 @@ import (
 	"github.com/perlin-network/noise/log"
 	"github.com/perlin-network/noise/network/transport"
 	"github.com/perlin-network/noise/peer"
+	"github.com/perlin-network/noise/types"
 
 	"github.com/gogo/protobuf/proto"
-	"github.com/gogo/protobuf/types"
+	ptypes "github.com/gogo/protobuf/types"
 	"github.com/pkg/errors"
 )
 
@@ -131,8 +132,8 @@ func (n *Network) dispatchMessage(client *PeerClient, msg *protobuf.Message) {
 	if !client.IsIncomingReady() {
 		return
 	}
-	var ptr types.DynamicAny
-	if err := types.UnmarshalAny(msg.Message, &ptr); err != nil {
+	var ptr ptypes.DynamicAny
+	if err := ptypes.UnmarshalAny(msg.Message, &ptr); err != nil {
 		log.Error().Err(err).Msg("")
 		return
 	}
@@ -446,17 +447,17 @@ func (n *Network) Plugin(key interface{}) (PluginInterface, bool) {
 
 // PrepareMessage marshals a message into a *protobuf.Message and signs it with this
 // nodes private key. Errors if the message is null.
-func (n *Network) PrepareMessage(message proto.Message) (*protobuf.Message, error) {
+func (n *Network) PrepareMessage(message proto.Message) (*types.Message, error) {
 	if message == nil {
 		return nil, errors.New("network: message is null")
 	}
 
-	raw, err := types.MarshalAny(message)
+	raw, err := ptypes.MarshalAny(message)
 	if err != nil {
 		return nil, err
 	}
 
-	id := protobuf.ID(n.ID)
+	id := peer.ID(n.ID)
 
 	signature, err := n.keys.Sign(
 		n.opts.signaturePolicy,
@@ -467,8 +468,8 @@ func (n *Network) PrepareMessage(message proto.Message) (*protobuf.Message, erro
 		return nil, err
 	}
 
-	msg := &protobuf.Message{
-		Message:   raw,
+	msg := &types.Message{
+		Body:      raw.Value,
 		Sender:    &id,
 		Signature: signature,
 	}
@@ -476,7 +477,7 @@ func (n *Network) PrepareMessage(message proto.Message) (*protobuf.Message, erro
 }
 
 // Write asynchronously sends a message to a denoted target address.
-func (n *Network) Write(address string, message *protobuf.Message) error {
+func (n *Network) Write(address string, message *types.Message) error {
 	state, ok := n.ConnectionState(address)
 	if !ok {
 		return errors.New("network: connection does not exist")
