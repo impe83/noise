@@ -4,8 +4,8 @@ import (
 	"net"
 
 	"github.com/perlin-network/noise/crypto"
-	"github.com/perlin-network/noise/internal/protobuf"
 	"github.com/perlin-network/noise/peer"
+	"github.com/perlin-network/noise/types"
 
 	"github.com/gogo/protobuf/proto"
 )
@@ -43,12 +43,12 @@ type NetworkInterface interface {
 	// Example: network.Plugin((*Plugin)(nil))
 	Plugin(key interface{}) (PluginInterface, bool)
 
-	// PrepareMessage marshals a message into a *protobuf.Message and signs it with this
+	// PrepareMessage marshals a protobuf message into a *types.Message and signs it with this
 	// nodes private key. Errors if the message is null.
-	PrepareMessage(message proto.Message) (*protobuf.Message, error)
+	PrepareMessage(message proto.Message) (*types.Message, error)
 
 	// Write asynchronously sends a message to a denoted target address.
-	Write(address string, message *protobuf.Message) error
+	Write(address string, message *types.Message) error
 
 	// Broadcast asynchronously broadcasts a message to all peer clients.
 	Broadcast(message proto.Message)
