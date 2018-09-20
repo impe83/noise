@@ -22,8 +22,8 @@ var (
 func TestCreateID(t *testing.T) {
 	t.Parallel()
 
-	if !bytes.Equal(id1.Id, blake2b.New().HashBytes(publicKey1)) {
-		t.Errorf("PublicKey = %s, want %s", id1.Id, publicKey1)
+	if !bytes.Equal(id1.ID, blake2b.New().HashBytes(publicKey1)) {
+		t.Errorf("PublicKey = %s, want %s", id1.ID, publicKey1)
 	}
 	if id1.Address != address {
 		t.Errorf("Address = %s, want %s", id1.Address, address)
@@ -33,7 +33,7 @@ func TestCreateID(t *testing.T) {
 func TestString(t *testing.T) {
 	t.Parallel()
 
-	want := "ID{Address: localhost:12345, Id: [73 44 127 92 143 18 83 102 101 246 108 105 60 227 86 107 128 15 61 7 191 108 178 184 1 152 19 41 78 16 131 58]}"
+	want := "ID{Address: localhost:12345, ID: [73 44 127 92 143 18 83 102 101 246 108 105 60 227 86 107 128 15 61 7 191 108 178 184 1 152 19 41 78 16 131 58]}"
 
 	if id1.String() != want {
 		t.Errorf("String() = %s, want %s", id1.String(), want)
@@ -85,7 +85,7 @@ func TestXorId(t *testing.T) {
 
 	xor := ID{
 		Address: address,
-		Id:      newId,
+		ID:      newId,
 	}
 
 	result := id1.XorID(id3)
@@ -128,7 +128,7 @@ func TestPrefixLen(t *testing.T) {
 	for _, tt := range testCases {
 		publicKey := make([]byte, 4)
 		binary.LittleEndian.PutUint32(publicKey, tt.publicKeyHash)
-		id := ID{Address: address, Id: publicKey}
+		id := ID{Address: address, ID: publicKey}
 		if id.PrefixLen() != tt.expected {
 			t.Errorf("PrefixLen() expected: %d, value: %d", tt.expected, id.PrefixLen())
 		}
