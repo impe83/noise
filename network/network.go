@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"math/rand"
 	"net"
+	"reflect"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -16,7 +17,6 @@ import (
 	"github.com/perlin-network/noise/types"
 
 	"github.com/gogo/protobuf/proto"
-	ptypes "github.com/gogo/protobuf/types"
 	"github.com/pkg/errors"
 )
 
@@ -128,28 +128,29 @@ func (n *Network) GetKeys() *crypto.KeyPair {
 	return n.keys
 }
 
-func (n *Network) dispatchMessage(client *PeerClient, msg *protobuf.Message) {
+func (n *Network) dispatchMessage(client *PeerClient, msg *types.Message) {
 	if !client.IsIncomingReady() {
 		return
 	}
-	var ptr ptypes.DynamicAny
-	if err := ptypes.UnmarshalAny(msg.Message, &ptr); err != nil {
+
+	log.Info().Msgf("dispatch msg: %+v", msg.Body)
+	var ptr proto.Message
+	if err := proto.Unmarshal(msg.Body, ptr); err != nil {
 		log.Error().Err(err).Msg("")
-		return
 	}
 
 	if msg.RequestNonce > 0 && msg.ReplyFlag {
 		if _state, exists := client.Requests.Load(msg.RequestNonce); exists {
 			state := _state.(*RequestState)
 			select {
-			case state.data <- ptr.Message:
+			case state.data <- ptr:
 			case <-state.closeSignal:
 			}
 			return
 		}
 	}
 
-	switch msgRaw := ptr.Message.(type) {
+	switch msgRaw := ptr.(type) {
 	case *protobuf.Bytes:
 		client.handleBytes(msgRaw.Data)
 	default:
@@ -324,7 +325,7 @@ func (n *Network) Bootstrap(addresses ...string) {
 			continue
 		}
 
-		err = client.Tell(&protobuf.Ping{})
+		err = client.Tell(&protobuf.Ping{true})
 		if err != nil {
 			continue
 		}
@@ -430,7 +431,7 @@ func (n *Network) Accept(incoming net.Conn) {
 			for _, msg := range ready {
 				msg := msg
 				client.Submit(func() {
-					n.dispatchMessage(client, msg.(*protobuf.Message))
+					n.dispatchMessage(client, msg.(*types.Message))
 				})
 			}
 		}()
@@ -452,24 +453,26 @@ func (n *Network) PrepareMessage(message proto.Message) (*types.Message, error) 
 		return nil, errors.New("network: message is null")
 	}
 
-	raw, err := ptypes.MarshalAny(message)
+	raw, err := proto.Marshal(message)
 	if err != nil {
 		return nil, err
 	}
+	log.Info().Str("msg_type", reflect.TypeOf(message).String()).Msgf("preparemessage: %+v", raw)
 
 	id := peer.ID(n.ID)
 
 	signature, err := n.keys.Sign(
 		n.opts.signaturePolicy,
 		n.opts.hashPolicy,
-		SerializeMessage(&id, raw.Value),
+		SerializeMessage(&id, raw),
 	)
 	if err != nil {
 		return nil, err
 	}
 
+	log.Info().Msgf("%+v", raw)
 	msg := &types.Message{
-		Body:      raw.Value,
+		Body:      raw,
 		Sender:    &id,
 		Signature: signature,
 	}
@@ -510,6 +513,7 @@ func (n *Network) Broadcast(message proto.Message) {
 
 // BroadcastByAddresses broadcasts a message to a set of peer clients denoted by their addresses.
 func (n *Network) BroadcastByAddresses(message proto.Message, addresses ...string) {
+	log.Info().Interface("msg", message).Msg("broadcastbyaddresses")
 	signed, err := n.PrepareMessage(message)
 	if err != nil {
 		return

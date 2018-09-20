@@ -6,9 +6,11 @@ import (
 
 	"github.com/perlin-network/noise/crypto/ed25519"
 	"github.com/perlin-network/noise/examples/proxy/messages"
+	"github.com/perlin-network/noise/log"
 	"github.com/perlin-network/noise/network"
 	"github.com/perlin-network/noise/network/discovery"
 	"github.com/perlin-network/noise/peer"
+
 	"github.com/pkg/errors"
 )
 
@@ -66,6 +68,7 @@ func (n *ProxyPlugin) ProxyBroadcast(node *network.Network, sender peer.ID, msg 
 
 	routes := plugin.(*discovery.Plugin).Routes
 
+	log.Info().Interface("msg", msg).Msg("i am broadcasting")
 	// If the target is in our routing table, directly proxy the message to them.
 	if routes.PeerExists(targetID) {
 		node.BroadcastByAddresses(msg, targetID.Address)
@@ -88,6 +91,7 @@ func (n *ProxyPlugin) ProxyBroadcast(node *network.Network, sender peer.ID, msg 
 		return errors.Errorf("could not found route from node %d to node %d", ids[node.Address], ids[targetID.Address])
 	}
 
+	log.Info().Interface("msg", msg).Msg("i am broadcasting")
 	// Propagate message to the closest peer.
 	node.BroadcastByAddresses(msg, closestPeers[0].Address)
 	return nil
@@ -152,7 +156,7 @@ func ExampleProxyPlugin() {
 	// Wait for all nodes to finish discovering other peers.
 	time.Sleep(1 * time.Second)
 
-	fmt.Println("Nodes setup as a line topology.")
+	log.Info().Msg("Nodes setup as a line topology.")
 
 	// Broadcast is an asynchronous call to send a message to other nodes
 	expected := &messages.ProxyMessage{
@@ -170,12 +174,12 @@ func ExampleProxyPlugin() {
 	select {
 	case received := <-plugins[target].Mailbox:
 		if received.Message != expected.Message {
-			fmt.Printf("Expected message (%v) to be received by node %d but got (%v).\n", expected, target, received)
+			log.Error().Msgf("Expected message (%v) to be received by node %d but got (%v).", expected, target, received)
 		} else {
-			fmt.Printf("Node %d successfully proxied a message to node %d.\n", sender, target)
+			log.Info().Msgf("Node %d successfully proxied a message to node %d.", sender, target)
 		}
 	case <-time.After(3 * time.Second):
-		fmt.Printf("Timed out attempting to receive message from Node %d.\n", sender)
+		log.Info().Msgf("Timed out attempting to receive message from Node %d.", sender)
 	}
 
 	// Output:

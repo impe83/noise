@@ -31,6 +31,8 @@ func (state *Plugin) Receive(ctx *network.PluginContext) error {
 	// Update routing for every incoming message.
 	state.Routes.Update(ctx.Sender())
 
+	log.Info().Msgf("%+v", ctx)
+
 	// Handle RPC.
 	switch msg := ctx.Message().(type) {
 	case *protobuf.Ping:
@@ -39,7 +41,7 @@ func (state *Plugin) Receive(ctx *network.PluginContext) error {
 		}
 
 		// Send pong to peer.
-		err := ctx.Reply(&protobuf.Pong{})
+		err := ctx.Reply(&protobuf.Pong{true})
 
 		if err != nil {
 			return err

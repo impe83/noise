@@ -33,6 +33,8 @@ func (n *Network) sendMessage(w io.Writer, message *types.Message, writerMutex *
 	buffer = append(buffer, msgBuf.Bytes()...)
 	totalSize := len(buffer)
 
+	log.Info().Interface("msg", message).Msgf("buffer: %+v", buffer)
+
 	// Write until all bytes have been written.
 	bytesWritten, totalBytesWritten := 0, 0
 
@@ -109,6 +111,7 @@ func (n *Network) receiveMessage(conn net.Conn) (*types.Message, error) {
 
 	// Check if any of the message headers are invalid or null.
 	if msg.Body == nil || &msg.Sender == nil || msg.Sender.PublicKey == nil || len(msg.Sender.Address) == 0 {
+		log.Info().Msgf("%+v", msg)
 		return nil, errors.New("received an invalid message (either no message or no sender) from a peer")
 	}
 
