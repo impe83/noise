@@ -37,9 +37,9 @@ func NewBucket() *Bucket {
 func CreateRoutingTable(id peer.ID) *RoutingTable {
 	table := &RoutingTable{
 		self:    id,
-		buckets: make([]*Bucket, len(id.Id)*8),
+		buckets: make([]*Bucket, len(id.ID)*8),
 	}
-	for i := 0; i < len(id.Id)*8; i++ {
+	for i := 0; i < len(id.ID)*8; i++ {
 		table.buckets[i] = NewBucket()
 	}
 
@@ -55,7 +55,7 @@ func (t *RoutingTable) Self() peer.ID {
 
 // Update moves a peer to the front of a bucket in the routing table.
 func (t *RoutingTable) Update(target peer.ID) {
-	if len(t.self.Id) != len(target.Id) {
+	if len(t.self.ID) != len(target.ID) {
 		return
 	}
 
@@ -171,7 +171,7 @@ func (t *RoutingTable) PeerExists(target peer.ID) bool {
 
 // FindClosestPeers returns a list of k(count) peers with smallest XorID distance.
 func (t *RoutingTable) FindClosestPeers(target peer.ID, count int) (peers []peer.ID) {
-	if len(t.self.Id) != len(target.Id) {
+	if len(t.self.ID) != len(target.ID) {
 		return []peer.ID{}
 	}
 
@@ -186,7 +186,7 @@ func (t *RoutingTable) FindClosestPeers(target peer.ID, count int) (peers []peer
 
 	bucket.mutex.RUnlock()
 
-	for i := 1; len(peers) < count && (bucketID-i >= 0 || bucketID+i < len(t.self.Id)*8); i++ {
+	for i := 1; len(peers) < count && (bucketID-i >= 0 || bucketID+i < len(t.self.ID)*8); i++ {
 		if bucketID-i >= 0 {
 			other := t.Bucket(bucketID - i)
 			other.mutex.RLock()
@@ -196,7 +196,7 @@ func (t *RoutingTable) FindClosestPeers(target peer.ID, count int) (peers []peer
 			other.mutex.RUnlock()
 		}
 
-		if bucketID+i < len(t.self.Id)*8 {
+		if bucketID+i < len(t.self.ID)*8 {
 			other := t.Bucket(bucketID + i)
 			other.mutex.RLock()
 			for e := other.Front(); e != nil; e = e.Next() {
