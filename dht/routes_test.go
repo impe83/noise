@@ -12,13 +12,12 @@ import (
 	"unsafe"
 
 	"github.com/perlin-network/noise/crypto/blake2b"
-	"github.com/perlin-network/noise/peer"
 )
 
 var (
-	id1 peer.ID
-	id2 peer.ID
-	id3 peer.ID
+	id1 types.ID
+	id2 types.ID
+	id3 types.ID
 
 	publicKey []byte
 )
@@ -126,21 +125,21 @@ func TestRemovePeer(t *testing.T) {
 func TestFindClosestPeers(t *testing.T) {
 	t.Parallel()
 
-	nodes := []peer.ID{}
+	nodes := []types.ID{}
 
 	nodes = append(nodes,
-		peer.ID{Address: "0000", ID: []byte("12345678901234567890123456789010")},
-		peer.ID{Address: "0001", ID: []byte("12345678901234567890123456789011")},
-		peer.ID{Address: "0002", ID: []byte("12345678901234567890123456789012")},
-		peer.ID{Address: "0003", ID: []byte("12345678901234567890123456789013")},
-		peer.ID{Address: "0004", ID: []byte("12345678901234567890123456789014")},
-		peer.ID{Address: "0005", ID: []byte("00000000000000000000000000000000")},
+		types.ID{Address: "0000", ID: []byte("12345678901234567890123456789010")},
+		types.ID{Address: "0001", ID: []byte("12345678901234567890123456789011")},
+		types.ID{Address: "0002", ID: []byte("12345678901234567890123456789012")},
+		types.ID{Address: "0003", ID: []byte("12345678901234567890123456789013")},
+		types.ID{Address: "0004", ID: []byte("12345678901234567890123456789014")},
+		types.ID{Address: "0005", ID: []byte("00000000000000000000000000000000")},
 	)
 	routingTable := CreateRoutingTable(nodes[0])
 	for i := 1; i <= 5; i++ {
 		routingTable.Update(nodes[i])
 	}
-	testee := []peer.ID{}
+	testee := []types.ID{}
 	for _, peer := range routingTable.FindClosestPeers(nodes[5], 3) {
 		testee = append(testee, peer)
 	}
@@ -155,7 +154,7 @@ func TestFindClosestPeers(t *testing.T) {
 		}
 	}
 
-	testee = []peer.ID{}
+	testee = []types.ID{}
 	for _, peer := range routingTable.FindClosestPeers(nodes[4], 2) {
 		testee = append(testee, peer)
 	}
@@ -179,7 +178,7 @@ func TestRoutingTable(t *testing.T) {
 	const concurrentCount = 16
 
 	pk0 := MustReadRand(32)
-	ids := make([]unsafe.Pointer, IDPoolSize) // Element type: *peer.ID
+	ids := make([]unsafe.Pointer, IDPoolSize) // Element type: *types.ID
 
 	table := CreateRoutingTable(peer.CreateID("000", pk0))
 
@@ -208,21 +207,21 @@ func TestRoutingTable(t *testing.T) {
 					}
 				case 1:
 					{
-						id := (*peer.ID)(atomic.LoadPointer(&ids[int(RandByte())%IDPoolSize]))
+						id := (*types.ID)(atomic.LoadPointer(&ids[int(RandByte())%IDPoolSize]))
 						if id != nil {
 							table.RemovePeer(*id)
 						}
 					}
 				case 2:
 					{
-						id := (*peer.ID)(atomic.LoadPointer(&ids[int(RandByte())%IDPoolSize]))
+						id := (*types.ID)(atomic.LoadPointer(&ids[int(RandByte())%IDPoolSize]))
 						if id != nil {
 							table.PeerExists(*id)
 						}
 					}
 				case 3:
 					{
-						id := (*peer.ID)(atomic.LoadPointer(&ids[int(RandByte())%IDPoolSize]))
+						id := (*types.ID)(atomic.LoadPointer(&ids[int(RandByte())%IDPoolSize]))
 						if id != nil {
 							table.FindClosestPeers(*id, 5)
 						}

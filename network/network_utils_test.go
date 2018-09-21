@@ -10,7 +10,6 @@ import (
 	"github.com/perlin-network/noise/internal/test/protobuf"
 	"github.com/perlin-network/noise/network"
 	"github.com/perlin-network/noise/network/discovery"
-	"github.com/perlin-network/noise/peer"
 )
 
 type env struct {
@@ -118,7 +117,7 @@ func (te *testSuite) getMailbox(n *network.Network) *MailBoxPlugin {
 	return pluginInt.(*MailBoxPlugin)
 }
 
-func (te *testSuite) getPeers(n *network.Network) []peer.ID {
+func (te *testSuite) getPeers(n *network.Network) []types.ID {
 	if n == nil {
 		return nil
 	}
@@ -162,7 +161,7 @@ func (state *MailBoxPlugin) Receive(ctx *network.PluginContext) error {
 	return nil
 }
 
-func isIn(address string, ids ...peer.ID) bool {
+func isIn(address string, ids ...types.ID) bool {
 	for _, a := range ids {
 		if a.Address == address {
 			return true

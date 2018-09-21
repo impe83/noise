@@ -4,7 +4,7 @@ import (
 	"net"
 
 	"github.com/perlin-network/noise/crypto"
-	"github.com/perlin-network/noise/peer"
+
 	"github.com/perlin-network/noise/types"
 
 	"github.com/gogo/protobuf/proto"
@@ -57,7 +57,7 @@ type NetworkInterface interface {
 	BroadcastByAddresses(message proto.Message, addresses ...string)
 
 	// BroadcastByIDs broadcasts a message to a set of peer clients denoted by their peer IDs.
-	BroadcastByIDs(message proto.Message, ids ...peer.ID)
+	BroadcastByIDs(message proto.Message, ids ...types.ID)
 
 	// BroadcastRandomly asynchronously broadcasts a message to random selected K peers.
 	// Does not guarantee broadcasting to exactly K peers.

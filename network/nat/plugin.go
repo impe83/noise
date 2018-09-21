@@ -6,7 +6,6 @@ import (
 
 	"github.com/perlin-network/noise/log"
 	"github.com/perlin-network/noise/network"
-	"github.com/perlin-network/noise/peer"
 
 	"github.com/fd/go-nat"
 )

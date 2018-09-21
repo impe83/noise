@@ -9,7 +9,6 @@ import (
 	"github.com/perlin-network/noise/log"
 	"github.com/perlin-network/noise/network"
 	"github.com/perlin-network/noise/network/discovery"
-	"github.com/perlin-network/noise/peer"
 
 	"github.com/pkg/errors"
 )
@@ -50,8 +49,8 @@ func (n *ProxyPlugin) Receive(ctx *network.PluginContext) error {
 }
 
 // ProxyBroadcast proxies a message until it reaches a target ID destination.
-func (n *ProxyPlugin) ProxyBroadcast(node *network.Network, sender peer.ID, msg *messages.ProxyMessage) error {
-	targetID := peer.ID{
+func (n *ProxyPlugin) ProxyBroadcast(node *network.Network, sender types.ID, msg *messages.ProxyMessage) error {
+	targetID := types.ID{
 		ID:      msg.Destination.Id,
 		Address: msg.Destination.Address,
 	}

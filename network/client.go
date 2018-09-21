@@ -7,10 +7,8 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/perlin-network/noise/internal/protobuf"
-	"github.com/perlin-network/noise/peer"
+	"github.com/perlin-network/noise/types"
 
-	"github.com/gogo/protobuf/proto"
 	"github.com/pkg/errors"
 )
 
@@ -22,7 +20,7 @@ const (
 type PeerClient struct {
 	Network *Network
 
-	ID      *peer.ID
+	ID      *types.ID
 	Address string
 
 	Requests     sync.Map // uint64 -> *RequestState
@@ -51,7 +49,7 @@ type StreamState struct {
 
 // RequestState represents a state of a request.
 type RequestState struct {
-	data        chan proto.Message
+	data        chan types.Message
 	closeSignal chan struct{}
 }
 
@@ -140,7 +138,7 @@ func (c *PeerClient) Close() error {
 }
 
 // Tell will asynchronously emit a message to a given peer.
-func (c *PeerClient) Tell(message proto.Message) error {
+func (c *PeerClient) Tell(message types.Message) error {
 	signed, err := c.Network.PrepareMessage(message)
 	if err != nil {
 		return errors.Wrap(err, "failed to sign message")
@@ -155,7 +153,7 @@ func (c *PeerClient) Tell(message proto.Message) error {
 }
 
 // Request requests for a response for a request sent to a given peer.
-func (c *PeerClient) Request(ctx context.Context, req proto.Message) (proto.Message, error) {
+func (c *PeerClient) Request(ctx context.Context, req types.Message) (types.Message, error) {
 	if ctx == nil {
 		return nil, errors.New("network: invalid context")
 	}
@@ -177,7 +175,7 @@ func (c *PeerClient) Request(ctx context.Context, req proto.Message) (proto.Mess
 	}
 
 	// Start tracking the request.
-	channel := make(chan proto.Message, 1)
+	channel := make(chan types.Message, 1)
 	closeSignal := make(chan struct{})
 
 	c.Requests.Store(signed.RequestNonce, &RequestState{
@@ -198,7 +196,7 @@ func (c *PeerClient) Request(ctx context.Context, req proto.Message) (proto.Mess
 }
 
 // Reply is equivalent to Write() with an appended nonce to signal a reply.
-func (c *PeerClient) Reply(nonce uint64, message proto.Message) error {
+func (c *PeerClient) Reply(nonce uint64, message types.Message) error {
 	signed, err := c.Network.PrepareMessage(message)
 	if err != nil {
 		return err
@@ -267,7 +265,7 @@ func (c *PeerClient) Write(data []byte) (int, error) {
 		return 0, errors.New("write deadline exceeded")
 	}
 
-	err := c.Tell(&protobuf.Bytes{Data: data})
+	err := c.Tell(&types.Message{Body: data})
 	if err != nil {
 		return 0, err
 	}

@@ -4,8 +4,6 @@ import (
 	"container/list"
 	"sort"
 	"sync"
-
-	"github.com/perlin-network/noise/peer"
 )
 
 // BucketSize defines the NodeID, Key, and routing table data structures.
@@ -14,7 +12,7 @@ const BucketSize = 16
 // RoutingTable contains one bucket list for lookups.
 type RoutingTable struct {
 	// Current node's ID.
-	self peer.ID
+	self types.ID
 
 	buckets []*Bucket
 }
@@ -34,7 +32,7 @@ func NewBucket() *Bucket {
 }
 
 // CreateRoutingTable is a Factory method of RoutingTable containing empty buckets.
-func CreateRoutingTable(id peer.ID) *RoutingTable {
+func CreateRoutingTable(id types.ID) *RoutingTable {
 	table := &RoutingTable{
 		self:    id,
 		buckets: make([]*Bucket, len(id.ID)*8),
@@ -49,12 +47,12 @@ func CreateRoutingTable(id peer.ID) *RoutingTable {
 }
 
 // Self returns the ID of the node hosting the current routing table instance.
-func (t *RoutingTable) Self() peer.ID {
+func (t *RoutingTable) Self() types.ID {
 	return t.self
 }
 
 // Update moves a peer to the front of a bucket in the routing table.
-func (t *RoutingTable) Update(target peer.ID) {
+func (t *RoutingTable) Update(target types.ID) {
 	if len(t.self.ID) != len(target.ID) {
 		return
 	}
@@ -68,7 +66,7 @@ func (t *RoutingTable) Update(target peer.ID) {
 	bucket.mutex.Lock()
 
 	for e := bucket.Front(); e != nil; e = e.Next() {
-		if e.Value.(peer.ID).Equals(target) {
+		if e.Value.(types.ID).Equals(target) {
 			element = e
 			break
 		}
@@ -87,7 +85,7 @@ func (t *RoutingTable) Update(target peer.ID) {
 }
 
 // GetPeers returns a randomly-ordered, unique list of all peers within the routing network (excluding itself).
-func (t *RoutingTable) GetPeers() (peers []peer.ID) {
+func (t *RoutingTable) GetPeers() (peers []types.ID) {
 	visited := make(map[string]struct{})
 	visited[t.self.PublicKeyHex()] = struct{}{}
 
@@ -95,7 +93,7 @@ func (t *RoutingTable) GetPeers() (peers []peer.ID) {
 		bucket.mutex.RLock()
 
 		for e := bucket.Front(); e != nil; e = e.Next() {
-			id := e.Value.(peer.ID)
+			id := e.Value.(types.ID)
 			if _, seen := visited[id.PublicKeyHex()]; !seen {
 				peers = append(peers, id)
 				visited[id.PublicKeyHex()] = struct{}{}
@@ -117,7 +115,7 @@ func (t *RoutingTable) GetPeerAddresses() (peers []string) {
 		bucket.mutex.RLock()
 
 		for e := bucket.Front(); e != nil; e = e.Next() {
-			id := e.Value.(peer.ID)
+			id := e.Value.(types.ID)
 			if _, seen := visited[id.PublicKeyHex()]; !seen {
 				peers = append(peers, id.Address)
 				visited[id.PublicKeyHex()] = struct{}{}
@@ -131,14 +129,14 @@ func (t *RoutingTable) GetPeerAddresses() (peers []string) {
 }
 
 // RemovePeer removes a peer from the routing table with O(bucket_size) time complexity.
-func (t *RoutingTable) RemovePeer(target peer.ID) bool {
+func (t *RoutingTable) RemovePeer(target types.ID) bool {
 	bucketID := target.XorID(t.self).PrefixLen()
 	bucket := t.Bucket(bucketID)
 
 	bucket.mutex.Lock()
 
 	for e := bucket.Front(); e != nil; e = e.Next() {
-		if e.Value.(peer.ID).Equals(target) {
+		if e.Value.(types.ID).Equals(target) {
 			bucket.Remove(e)
 
 			bucket.mutex.Unlock()
@@ -152,7 +150,7 @@ func (t *RoutingTable) RemovePeer(target peer.ID) bool {
 }
 
 // PeerExists checks if a peer exists in the routing table with O(bucket_size) time complexity.
-func (t *RoutingTable) PeerExists(target peer.ID) bool {
+func (t *RoutingTable) PeerExists(target types.ID) bool {
 	bucketID := target.XorID(t.self).PrefixLen()
 	bucket := t.Bucket(bucketID)
 
@@ -161,7 +159,7 @@ func (t *RoutingTable) PeerExists(target peer.ID) bool {
 	defer bucket.mutex.Unlock()
 
 	for e := bucket.Front(); e != nil; e = e.Next() {
-		if e.Value.(peer.ID).Equals(target) {
+		if e.Value.(types.ID).Equals(target) {
 			return true
 		}
 	}
@@ -170,9 +168,9 @@ func (t *RoutingTable) PeerExists(target peer.ID) bool {
 }
 
 // FindClosestPeers returns a list of k(count) peers with smallest XorID distance.
-func (t *RoutingTable) FindClosestPeers(target peer.ID, count int) (peers []peer.ID) {
+func (t *RoutingTable) FindClosestPeers(target types.ID, count int) (peers []types.ID) {
 	if len(t.self.ID) != len(target.ID) {
-		return []peer.ID{}
+		return []types.ID{}
 	}
 
 	bucketID := target.XorID(t.self).PrefixLen()
@@ -181,7 +179,7 @@ func (t *RoutingTable) FindClosestPeers(target peer.ID, count int) (peers []peer
 	bucket.mutex.RLock()
 
 	for e := bucket.Front(); e != nil; e = e.Next() {
-		peers = append(peers, e.Value.(peer.ID))
+		peers = append(peers, e.Value.(types.ID))
 	}
 
 	bucket.mutex.RUnlock()
@@ -191,7 +189,7 @@ func (t *RoutingTable) FindClosestPeers(target peer.ID, count int) (peers []peer
 			other := t.Bucket(bucketID - i)
 			other.mutex.RLock()
 			for e := other.Front(); e != nil; e = e.Next() {
-				peers = append(peers, e.Value.(peer.ID))
+				peers = append(peers, e.Value.(types.ID))
 			}
 			other.mutex.RUnlock()
 		}
@@ -200,7 +198,7 @@ func (t *RoutingTable) FindClosestPeers(target peer.ID, count int) (peers []peer
 			other := t.Bucket(bucketID + i)
 			other.mutex.RLock()
 			for e := other.Front(); e != nil; e = e.Next() {
-				peers = append(peers, e.Value.(peer.ID))
+				peers = append(peers, e.Value.(types.ID))
 			}
 			other.mutex.RUnlock()
 		}

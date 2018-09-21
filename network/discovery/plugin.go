@@ -41,7 +41,9 @@ func (state *Plugin) Receive(ctx *network.PluginContext) error {
 		}
 
 		// Send pong to peer.
-		err := ctx.Reply(&protobuf.Pong{true})
+		err := ctx.Reply(&protobuf.Pong{
+			NonEmpty: true,
+		})
 
 		if err != nil {
 			return err

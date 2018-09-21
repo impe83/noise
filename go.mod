@@ -6,6 +6,7 @@ require (
 	github.com/fd/go-nat v1.0.0
 	github.com/gogo/protobuf v1.1.1
 	github.com/golang/mock v1.1.1
+	github.com/golang/protobuf v1.2.0
 	github.com/klauspost/cpuid v0.0.0-20180405133222-e7e905edc00e // indirect
 	github.com/klauspost/reedsolomon v0.0.0-20180704173009-925cb01d6510 // indirect
 	github.com/minio/blake2b-simd v0.0.0-20160723061019-3f5f724cb5b1

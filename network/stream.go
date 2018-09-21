@@ -108,10 +108,10 @@ func (n *Network) receiveMessage(conn net.Conn) (*types.Message, error) {
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to unmarshal message")
 	}
+	log.Info().Interface("msg", msg).Msg("after xdr unmarshal receiveMsg")
 
 	// Check if any of the message headers are invalid or null.
 	if msg.Body == nil || &msg.Sender == nil || msg.Sender.PublicKey == nil || len(msg.Sender.Address) == 0 {
-		log.Info().Msgf("%+v", msg)
 		return nil, errors.New("received an invalid message (either no message or no sender) from a peer")
 	}
 

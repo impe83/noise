@@ -9,7 +9,7 @@ import (
 	"github.com/perlin-network/noise/crypto/blake2b"
 	"github.com/perlin-network/noise/crypto/ed25519"
 	"github.com/perlin-network/noise/network/transport"
-	"github.com/perlin-network/noise/peer"
+
 	"github.com/pkg/errors"
 )
 

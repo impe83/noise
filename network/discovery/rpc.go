@@ -9,10 +9,9 @@ import (
 	"github.com/perlin-network/noise/dht"
 	"github.com/perlin-network/noise/internal/protobuf"
 	"github.com/perlin-network/noise/network"
-	"github.com/perlin-network/noise/peer"
 )
 
-func queryPeerByID(net *network.Network, peerID peer.ID, targetID peer.ID, responses chan []*protobuf.ID) {
+func queryPeerByID(net *network.Network, peerID types.ID, targetID types.ID, responses chan []*protobuf.ID) {
 	client, err := net.Client(peerID.Address)
 	if err != nil {
 		responses <- []*protobuf.ID{}
@@ -40,10 +39,10 @@ func queryPeerByID(net *network.Network, peerID peer.ID, targetID peer.ID, respo
 
 type lookupBucket struct {
 	pending int
-	queue   []peer.ID
+	queue   []types.ID
 }
 
-func (lookup *lookupBucket) performLookup(net *network.Network, targetID peer.ID, alpha int, visited *sync.Map) (results []peer.ID) {
+func (lookup *lookupBucket) performLookup(net *network.Network, targetID types.ID, alpha int, visited *sync.Map) (results []types.ID) {
 	responses := make(chan []*protobuf.ID)
 
 	// Go through every peer in the entire queue and queue up what peers believe
@@ -95,7 +94,7 @@ func (lookup *lookupBucket) performLookup(net *network.Network, targetID peer.ID
 // All lookups are done under a number of disjoint lookups in parallel.
 //
 // Queries at most #ALPHA nodes at a time per lookup, and returns all peer IDs closest to a target peer ID.
-func FindNode(net *network.Network, targetID peer.ID, alpha int, disjointPaths int) (results []peer.ID) {
+func FindNode(net *network.Network, targetID types.ID, alpha int, disjointPaths int) (results []types.ID) {
 	plugin, exists := net.Plugin(PluginID)
 
 	// Discovery plugin was not registered. Fail.

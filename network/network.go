@@ -10,13 +10,11 @@ import (
 	"time"
 
 	"github.com/perlin-network/noise/crypto"
-	"github.com/perlin-network/noise/internal/protobuf"
 	"github.com/perlin-network/noise/log"
 	"github.com/perlin-network/noise/network/transport"
-	"github.com/perlin-network/noise/peer"
+
 	"github.com/perlin-network/noise/types"
 
-	"github.com/gogo/protobuf/proto"
 	"github.com/pkg/errors"
 )
 
@@ -54,7 +52,7 @@ type Network struct {
 	plugins *PluginList
 
 	// Node's cryptographic ID.
-	ID peer.ID
+	ID types.ID
 
 	// Map of connection addresses (string) <-> *network.PeerClient
 	// so that the Network doesn't dial multiple times to the same ip
@@ -134,8 +132,8 @@ func (n *Network) dispatchMessage(client *PeerClient, msg *types.Message) {
 	}
 
 	log.Info().Msgf("dispatch msg: %+v", msg.Body)
-	var ptr proto.Message
-	if err := proto.Unmarshal(msg.Body, ptr); err != nil {
+	var ptr ptypes.DynamicAny
+	if err := ptypes.UnmarshalAny(msg.Body, ptr); err != nil {
 		log.Error().Err(err).Msg("")
 	}
 
@@ -325,7 +323,9 @@ func (n *Network) Bootstrap(addresses ...string) {
 			continue
 		}
 
-		err = client.Tell(&protobuf.Ping{true})
+		err = client.Tell(&protobuf.Ping{
+			NonEmpty: true,
+		})
 		if err != nil {
 			continue
 		}
@@ -393,6 +393,7 @@ func (n *Network) Accept(incoming net.Conn) {
 			}
 			break
 		}
+		log.Info().Interface("msg", msg).Msg("receiveMessage")
 
 		// Initialize client if not exists.
 		clientInit.Do(func() {
@@ -401,7 +402,7 @@ func (n *Network) Accept(incoming net.Conn) {
 				return
 			}
 
-			client.ID = (*peer.ID)(msg.Sender)
+			client.ID = (*types.ID)(msg.Sender)
 
 			if !n.ConnectionStateExists(client.ID.Address) {
 				err = errors.New("network: failed to load session")
@@ -417,9 +418,9 @@ func (n *Network) Accept(incoming net.Conn) {
 
 		go func() {
 			// Peer sent message with a completely different ID. Disconnect.
-			if !client.ID.Equals(peer.ID(*msg.Sender)) {
+			if !client.ID.Equals(types.ID(*msg.Sender)) {
 				log.Error().
-					Interface("peer_id", peer.ID(*msg.Sender)).
+					Interface("peer_id", types.ID(*msg.Sender)).
 					Interface("client_id", client.ID).
 					Msg("message signed by peer does not match client ID")
 				return
@@ -448,18 +449,18 @@ func (n *Network) Plugin(key interface{}) (PluginInterface, bool) {
 
 // PrepareMessage marshals a message into a *protobuf.Message and signs it with this
 // nodes private key. Errors if the message is null.
-func (n *Network) PrepareMessage(message proto.Message) (*types.Message, error) {
+func (n *Network) PrepareMessage(message *types.Message) (*types.Message, error) {
 	if message == nil {
 		return nil, errors.New("network: message is null")
 	}
 
-	raw, err := proto.Marshal(message)
+	raw, err := message.Marshal()
 	if err != nil {
 		return nil, err
 	}
 	log.Info().Str("msg_type", reflect.TypeOf(message).String()).Msgf("preparemessage: %+v", raw)
 
-	id := peer.ID(n.ID)
+	id := types.ID(n.ID)
 
 	signature, err := n.keys.Sign(
 		n.opts.signaturePolicy,
@@ -470,7 +471,6 @@ func (n *Network) PrepareMessage(message proto.Message) (*types.Message, error) 
 		return nil, err
 	}
 
-	log.Info().Msgf("%+v", raw)
 	msg := &types.Message{
 		Body:      raw,
 		Sender:    &id,
@@ -500,7 +500,14 @@ func (n *Network) Write(address string, message *types.Message) error {
 // Broadcast asynchronously broadcasts a message to all peer clients.
 func (n *Network) Broadcast(message proto.Message) {
 	n.eachPeer(func(client *PeerClient) bool {
-		err := client.Tell(message)
+		signed, err := n.PrepareMessage(message)
+		if err != nil {
+			log.Warn().
+				Err(err).
+				Msg("failed to sign message")
+			return false
+		}
+		err = n.Write(client.Address, signed)
 		if err != nil {
 			log.Warn().
 				Err(err).
@@ -525,7 +532,7 @@ func (n *Network) BroadcastByAddresses(message proto.Message, addresses ...strin
 }
 
 // BroadcastByIDs broadcasts a message to a set of peer clients denoted by their peer IDs.
-func (n *Network) BroadcastByIDs(message proto.Message, ids ...peer.ID) {
+func (n *Network) BroadcastByIDs(message proto.Message, ids ...types.ID) {
 	signed, err := n.PrepareMessage(message)
 	if err != nil {
 		return

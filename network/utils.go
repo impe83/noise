@@ -5,11 +5,10 @@ import (
 	"net"
 
 	"github.com/perlin-network/noise/internal/protobuf"
-	"github.com/perlin-network/noise/peer"
 )
 
 // SerializeMessage compactly packs all bytes of a message together for cryptographic signing purposes.
-func SerializeMessage(id *peer.ID, message []byte) []byte {
+func SerializeMessage(id *types.ID, message []byte) []byte {
 	const uint32Size = 4
 
 	serialized := make([]byte, uint32Size+len(id.Address)+uint32Size+len(id.ID)+len(message))
@@ -66,20 +65,20 @@ func GetRandomUnusedPort() int {
 	return listener.Addr().(*net.TCPAddr).Port
 }
 
-// ProtoPeerToPeer converts a protobuf.ID type to peer.ID
-func ProtoPeerToPeer(p *protobuf.ID) *peer.ID {
+// ProtoPeerToPeer converts a protobuf.ID type to types.ID
+func ProtoPeerToPeer(p *protobuf.ID) *types.ID {
 	if p == nil {
 		return nil
 	}
-	return &peer.ID{
+	return &types.ID{
 		Address:   p.Address,
 		ID:        p.Id,
 		PublicKey: p.PublicKey,
 	}
 }
 
-// PeerToProtoPeer converts a peer.ID to protobuf.ID
-func PeerToProtoPeer(p *peer.ID) *protobuf.ID {
+// PeerToProtoPeer converts a types.ID to protobuf.ID
+func PeerToProtoPeer(p *types.ID) *protobuf.ID {
 	if p == nil {
 		return nil
 	}
